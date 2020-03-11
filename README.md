@@ -14,8 +14,6 @@ This configuration does the following
 
 TODO
  - Add a safety mechanism (beam) to block door from moving
- - Home Assistant only allows pressing close button when door is halfway open/closed, need to enable open button as well (Probably just need to set assumed_state to true)
- - Stop button need to stop the door and switch the current operation to IDLE
  
 Assumptions
   - No alternate input (Mechanical button/remote - other than throigh the ESP) will be done when the door is moving towards it's desired position other
