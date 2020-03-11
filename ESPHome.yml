@@ -1,0 +1,144 @@
+esphome:
+  name: garage_door
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: "XXXXXXXXX"
+  password: "XXXXXXXXX"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Garage Door Fallback Hotspot"
+    password: "XXXXXXXXX"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+globals:
+  - id: wrong_es_triggered
+    type: boolean
+    restore_value: no
+    initial_value: 'false'
+
+switch:
+  # The switch that turns the UP direction on
+  - platform: gpio
+    pin: D1
+    id: garage_switch
+    # If ESP reboots, do not attempt to restore switch state
+    restore_mode: always off
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Garage Closed Reed Switch"
+    id: closed_endstop
+    filters:
+      - delayed_on: 1000ms #Wait to stop moving
+      - delayed_off: 1000ms #Wait to start moving
+  - platform: gpio
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Garage Open Reed Switch"
+    id: open_endstop
+    filters:
+      - delayed_on: 1000ms #Wait to stop moving
+      - delayed_off: 1000ms #Wait to start moving
+
+cover:
+  - platform: template
+    name: "Garage Door"
+    id: garage_door
+    device_class: garage
+    lambda: !lambda |-
+      
+      if (id(closed_endstop).state) //Door just hit closed endstop
+      { 
+        if(id(garage_door).current_operation ==  esphome::cover::COVER_OPERATION_OPENING) //We should be opening
+        {
+          if(!id(wrong_es_triggered)) //Make sure we don't trigger thi slogic twice otherwise it will do unwanted things
+          {
+            delay(1000); //Wait for door to stop in case reed is triggered too early
+            id(garage_switch).turn_on(); //Press button again
+            delay(500);
+            id(garage_switch).turn_off();
+            id(wrong_es_triggered) = true; //Set flag to indicate we made it move in the other direction
+          }
+        }
+        else if(id(garage_door).current_operation ==  esphome::cover::COVER_OPERATION_CLOSING)
+        {
+          //We should be closing, so all is good
+          id(wrong_es_triggered) = false;
+          id(garage_door).current_operation =  esphome::cover::COVER_OPERATION_IDLE;
+          return COVER_CLOSED;
+        }
+        else
+        {
+          //No operation in progress, just send state
+          id(wrong_es_triggered) = false;
+          return COVER_CLOSED;
+        }
+      }
+      else if (id(open_endstop).state) //Door just hit open endstop
+      {
+        if(id(garage_door).current_operation ==  esphome::cover::COVER_OPERATION_CLOSING) //We should be closing
+        {
+          if (!id(wrong_es_triggered))  //Make sure we don't trigger thi slogic twice otherwise it will do unwanted things
+          {
+            delay(1000);  //Wait for door to stop in case reed is triggered too early
+            id(garage_switch).turn_on(); //Press button again
+            delay(500);
+            id(garage_switch).turn_off();
+            id(wrong_es_triggered) = true; //Set flag to indicate we made it move in the other direction
+          }
+        }
+        else if(id(garage_door).current_operation ==  esphome::cover::COVER_OPERATION_OPENING)
+        {
+          //We should be opening, so all is good
+          id(wrong_es_triggered) = false;
+          id(garage_door).current_operation =  esphome::cover::COVER_OPERATION_IDLE;
+          return COVER_OPEN;
+        }
+        else
+        {
+          //No operation in progress, just send state
+          id(wrong_es_triggered) = false;
+          return COVER_OPEN;
+        }
+      }
+
+    open_action: 
+      - lambda: !lambda |-
+          id(garage_door).current_operation =  esphome::cover::COVER_OPERATION_OPENING;
+          id(garage_switch).turn_on();
+          delay(500);
+          id(garage_switch).turn_off();
+    close_action:
+      - lambda: !lambda |-
+          id(garage_door).current_operation =  esphome::cover::COVER_OPERATION_CLOSING;
+          if (!id(closed_endstop).state) {
+            id(garage_switch).turn_on();
+            delay(500);
+            id(garage_switch).turn_off();
+          }
+    stop_action:
+      - switch.turn_off:
+          id: garage_switch
+      - switch.turn_on:
+          id: garage_switch
+      - delay: 1s
+      - switch.turn_off:
+          id: garage_switch
