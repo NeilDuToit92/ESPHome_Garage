@@ -18,5 +18,5 @@ TODO
  - Stop button need to stop the door and switch the current operation to IDLE
  
 Assumptions
-  - No pressing of the door's mechanincal button will be done when the door is moving towards it's desired position other
-  - When implemented, the stop button can only stop the door when movement was triggered by the ESP, not when triggered by the original mechanical button
+  - No alternate input (Mechanical button/remote - other than throigh the ESP) will be done when the door is moving towards it's desired position other
+  - When implemented, the stop button can only stop the door when movement was triggered by the ESP, not when triggered by the original mechanical button/remote
