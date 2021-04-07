@@ -1,0 +1,62 @@
+#This is untested
+esphome:
+  name: garage_door
+  platform: ESP8266
+  board: d1_mini
+
+wifi:
+  ssid: "XXXXXXXXX"
+  password: "XXXXXXXXX"
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Garage Door Fallback Hotspot"
+    password: "XXXXXXXXX"
+
+captive_portal:
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+
+ota:
+
+binary_sensor:
+  - platform: gpio
+    internal: true
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Garage Closed Reed Switch"
+    id: closed_endstop
+    on_press:
+      - logger.log: " Transit Transit = 2 = Closed"
+      - sensor.template.publish:
+          id: door_position_sensor 
+          state: '2'
+    on_release:
+      - logger.log: " Transit = 3 = Closing" 
+  - platform: gpio
+    internal: true
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+      inverted: true
+    name: "Garage Open Reed Switch"
+    id: open_endstop
+    on_press:
+      - logger.log: " Transit = 1 = Open"  
+      - sensor.template.publish:
+          id: door_position_sensor 
+          state: '1'
+    on_release:
+      - logger.log: " Transit = 4 = Opening" 
+    
+
+sensor:
+  - platform: template
+    name: "Door Position Sensor"
+    id: door_position_sensor
