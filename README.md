@@ -31,4 +31,5 @@ TODO
  
 
 The user [muxa](https://github.com/muxa) has created a different version [here](https://gist.github.com/muxa/9d0b1be8ea7c3daed5a0d4f0db058e4f).
+
 He has also opened a [feature request](https://github.com/esphome/feature-requests/issues/1268) so that we can make a component for this, instead of having to do it in yaml manually.
